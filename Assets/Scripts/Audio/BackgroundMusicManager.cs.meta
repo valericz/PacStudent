@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 180c7bf2c8e104fee92de35cf1224756
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - audioSource: {instanceID: 0}
+  - gameIntro: {fileID: 8300000, guid: 4798e9a90ca17465580453bf8b270033, type: 3}
+  - ghostsNormal: {fileID: 8300000, guid: 82e654b64f66041018e30fddf105aaf4, type: 3}
+  - ghostsScared: {fileID: 8300000, guid: 2507f393a95bf4d91a84e7fc27e0066e, type: 3}
+  - ghostDead: {fileID: 8300000, guid: 426287d3352584c01a58a04bc057e38f, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
