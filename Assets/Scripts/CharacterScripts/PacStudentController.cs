@@ -2,72 +2,91 @@ using UnityEngine;
 
 public class PacStudentController : MonoBehaviour
 {
-    public float moveSpeed = 5f;  // 控制移动速度
-    private Animator animator;
-    private SpriteRenderer spriteRenderer;
-    private bool isDead = false;
-
-    void Start()
-    {
-        // 获取 Animator 和 SpriteRenderer 组件
-        animator = GetComponent<Animator>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
-    }
+    public float moveSpeed = 5f;
+    private string lastInput = null;
+    private string currentInput = null;
+    private bool isLerping = false;
+    private Vector3 startPos;
+    private Vector3 endPos;
+    private float lerpProgress;
 
     void Update()
     {
-        // 玩家按下空格触发死亡动画
-        if (Input.GetKeyDown(KeyCode.Space))
+        // 捕获持续按键输入
+        if (Input.GetKey(KeyCode.W)) lastInput = "up";
+        else if (Input.GetKey(KeyCode.A)) lastInput = "left";
+        else if (Input.GetKey(KeyCode.S)) lastInput = "down";
+        else if (Input.GetKey(KeyCode.D)) lastInput = "right";
+
+        // 当不在lerping时，尝试开始新的移动
+        if (!isLerping)
         {
-            Die(); // 调用 Die 函数
+            // 如果有按键输入，则使用 lastInput 的方向移动
+            if (lastInput != "")
+            {
+                Vector3 direction = GetDirection(lastInput);
+                if (CanMove(direction))
+                {
+                    currentInput = lastInput;
+                    StartLerp(direction);
+                }
+                else if (CanMove(GetDirection(currentInput)))
+                {
+                    StartLerp(GetDirection(currentInput));
+                }
+            }
         }
-
-        if (!isDead)
+        else
         {
-            // 获取玩家的水平和垂直输入
-            float horizontal = Input.GetAxis("Horizontal");
-            float vertical = Input.GetAxis("Vertical");
-
-            // 将输入值传递给 Animator 以控制动画切换
-            animator.SetFloat("Horizontal", horizontal);
-            animator.SetFloat("Vertical", vertical);
-
-            // 控制角色移动
-            Vector3 movement = new Vector3(horizontal, vertical, 0f);
-            transform.position += movement * moveSpeed * Time.deltaTime;
-
-            // 处理角色朝向
-            HandleSpriteDirection(horizontal, vertical);
-        }
-    }
-
-    void HandleSpriteDirection(float horizontal, float vertical)
-    {
-        if (horizontal != 0)
-        {
-            spriteRenderer.flipX = horizontal < 0;
-            transform.rotation = Quaternion.Euler(0, 0, 0);
-        }
-        else if (vertical > 0)
-        {
-            spriteRenderer.flipX = false;
-            transform.rotation = Quaternion.Euler(0, 0, 90);
-        }
-        else if (vertical < 0)
-        {
-            spriteRenderer.flipX = false;
-            transform.rotation = Quaternion.Euler(0, 0, -90);
+            // 在lerping时继续移动
+            ContinueLerp();
         }
     }
 
-    // 定义 Die 方法
-    void Die()
+    Vector3 GetDirection(string input)
     {
-        isDead = true;  // 设置死亡状态为 true
-        animator.SetBool("isDead", true);  // 触发死亡动画
+        switch (input)
+        {
+            case "up": return Vector3.up;
+            case "left": return Vector3.left;
+            case "down": return Vector3.down;
+            case "right": return Vector3.right;
+            default: return Vector3.zero;
+        }
+    }
 
-        // 停止所有移动
-        animator.SetFloat("Horizontal", 0);
-        animator.SetFloat("Vertical", 0);
+    bool CanMove(Vector3 direction)
+    {
+        // 检查方向是否可行走的逻辑（伪代码）
+        // 例如：return !Physics.Raycast(transform.position, direction, 1f);
+        return true; // 暂时允许所有方向
+    }
+
+    void StartLerp(Vector3 direction)
+    {
+        startPos = transform.position;
+        endPos = startPos + direction;
+        lerpProgress = 0f;
+        isLerping = true;
+    }
+
+    void ContinueLerp()
+    {
+        lerpProgress += Time.deltaTime * moveSpeed;
+        transform.position = Vector3.Lerp(startPos, endPos, lerpProgress);
+
+        // 当达到目标网格时
+        if (lerpProgress >= 1f)
+        {
+            isLerping = false;
+            transform.position = endPos;
+
+            // 当停止输入时，确保 PacStudent 对齐到最近的网格
+            if (!Input.anyKey)
+            {
+                currentInput = "";  // 停止当前移动方向
+                lastInput = "";     // 停止任何新方向
+            }
+        }
     }
 }
