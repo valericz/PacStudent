@@ -3,13 +3,14 @@ using System.Collections;
 
 public class CherryController : MonoBehaviour
 {
-    public GameObject cherryPrefab;       // Cherry 的预制体
-    public float spawnInterval = 10f;     // 生成时间间隔
-    public float moveSpeed = 2f;          // Cherry 移动速度
-    private GameObject currentCherry;     // 当前 Cherry 的实例
-    private Vector3 spawnPosition;        // Cherry 的生成位置
-    private Vector3 targetPosition;       // Cherry 的目标位置
-    private Vector3 centerPoint = Vector3.zero; // 屏幕中心点
+    public GameObject cherryPrefab;       // Cherry prefab
+    public float spawnInterval = 10f;     // Spawn interval (10 seconds)
+    public float moveSpeed = 2f;          // Cherry movement speed
+    private GameObject currentCherry;     // Current Cherry instance
+    private Vector3 spawnPosition;        // Cherry spawn position
+    private Vector3 targetPosition;       // Cherry target position
+    private Vector3 centerPoint = Vector3.zero; // Level center point
+    public int cherryOrderInLayer = 10;   // Dynamic order in layer for Cherry
 
     void Start()
     {
@@ -20,85 +21,88 @@ public class CherryController : MonoBehaviour
     {
         while (true)
         {
-            // 等待指定的时间间隔
+            // Wait for the specified spawn interval
             yield return new WaitForSeconds(spawnInterval);
 
-            // 确保旧的 Cherry 被销毁
+            // Ensure the previous cherry is destroyed
             if (currentCherry != null)
             {
                 Destroy(currentCherry);
-                currentCherry = null; // 确保引用清除，避免重复检查
-                yield return new WaitForEndOfFrame(); // 等待一帧确保销毁完成
+                yield return new WaitForEndOfFrame(); // Ensure destruction completes
             }
 
-            // 设置生成位置和目标位置，使 Cherry 穿越中心点
+            // Set random spawn and target positions
             SetSpawnAndTargetPositions();
 
-            // 创建新的 Cherry 实例
+            // Instantiate the new cherry
             currentCherry = Instantiate(cherryPrefab, spawnPosition, Quaternion.identity);
 
-            // 启动 Cherry 的分段移动协程
+            // Dynamically set Order in Layer for the Cherry
+            currentCherry.GetComponent<SpriteRenderer>().sortingOrder = cherryOrderInLayer;
+
+            // Start the movement coroutine
             StartCoroutine(MoveCherryThroughCenter(currentCherry));
         }
     }
 
     void SetSpawnAndTargetPositions()
     {
-        // 随机选择 Cherry 从屏幕四边生成
-        float randomValue = Random.Range(-8f, 8f); // 随机生成位置范围，根据需要调整
+        // Randomly choose a side to spawn the cherry
+        float randomValue = Random.Range(-8f, 8f); // Random range based on screen boundaries
 
-        int side = Random.Range(0, 4); // 0:上, 1:下, 2:左, 3:右
+        int side = Random.Range(0, 4); // 0: top, 1: bottom, 2: left, 3: right
         switch (side)
         {
-            case 0: // 上方
-                spawnPosition = new Vector3(randomValue, 8f, 0f); // 从屏幕上方生成
+            case 0: // Top
+                spawnPosition = new Vector3(randomValue, 8f, 0f);
                 break;
-            case 1: // 下方
-                spawnPosition = new Vector3(randomValue, -8f, 0f); // 从屏幕下方生成
+            case 1: // Bottom
+                spawnPosition = new Vector3(randomValue, -8f, 0f);
                 break;
-            case 2: // 左侧
-                spawnPosition = new Vector3(-8f, randomValue, 0f); // 从屏幕左侧生成
+            case 2: // Left
+                spawnPosition = new Vector3(-8f, randomValue, 0f);
                 break;
-            case 3: // 右侧
-                spawnPosition = new Vector3(8f, randomValue, 0f); // 从屏幕右侧生成
+            case 3: // Right
+                spawnPosition = new Vector3(8f, randomValue, 0f);
                 break;
         }
 
-        // 目标位置：以中心点为对称轴
+        // Set the target position to the opposite side, ensuring it crosses the center point
         targetPosition = -spawnPosition;
     }
 
     IEnumerator MoveCherryThroughCenter(GameObject cherry)
     {
-        // Step 1: 从生成位置移动到中心点
-        float journeyLengthToCenter = Vector3.Distance(spawnPosition, centerPoint);
-        float startTime = Time.time;
+        // Move cherry from spawn position to the center point
+        Vector3 journeyStart = spawnPosition;
+        Vector3 journeyEnd = centerPoint;
+        float journeyLength = Vector3.Distance(journeyStart, journeyEnd);
+        float journeyProgress = 0f;
 
-        while (cherry != null && Vector3.Distance(cherry.transform.position, centerPoint) > 0.1f)
+        while (cherry != null && journeyProgress < 1f)
         {
-            float distCovered = (Time.time - startTime) * moveSpeed;
-            float fractionOfJourney = distCovered / journeyLengthToCenter;
-            cherry.transform.position = Vector3.Lerp(spawnPosition, centerPoint, fractionOfJourney);
+            journeyProgress += Time.deltaTime * moveSpeed / journeyLength;
+            cherry.transform.position = Vector3.Lerp(journeyStart, journeyEnd, journeyProgress);
             yield return null;
         }
 
-        // Step 2: 从中心点移动到目标位置
-        float journeyLengthToTarget = Vector3.Distance(centerPoint, targetPosition);
-        startTime = Time.time;
+        // Move cherry from the center point to the target position (outside camera view)
+        journeyStart = centerPoint;
+        journeyEnd = targetPosition;
+        journeyLength = Vector3.Distance(journeyStart, journeyEnd);
+        journeyProgress = 0f;
 
-        while (cherry != null && Vector3.Distance(cherry.transform.position, targetPosition) > 0.1f)
+        while (cherry != null && journeyProgress < 1f)
         {
-            float distCovered = (Time.time - startTime) * moveSpeed;
-            float fractionOfJourney = distCovered / journeyLengthToTarget;
-            cherry.transform.position = Vector3.Lerp(centerPoint, targetPosition, fractionOfJourney);
+            journeyProgress += Time.deltaTime * moveSpeed / journeyLength;
+            cherry.transform.position = Vector3.Lerp(journeyStart, journeyEnd, journeyProgress);
             yield return null;
         }
 
-        // 当 Cherry 到达目标位置后自动销毁
+        // Destroy the cherry once it has reached the target position outside camera view
         if (cherry != null)
         {
             Destroy(cherry);
-            currentCherry = null; // 确保 currentCherry 引用被清空
         }
     }
 }
