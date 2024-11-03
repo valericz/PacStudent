@@ -9,6 +9,12 @@ public class PacStudentController : MonoBehaviour
     private Vector3 startPos;
     private Vector3 endPos;
     private float lerpProgress;
+    private Animator animator;
+
+    void Start()
+    {
+        animator = GetComponent<Animator>();
+    }
 
     void Update()
     {
@@ -18,11 +24,13 @@ public class PacStudentController : MonoBehaviour
         else if (Input.GetKey(KeyCode.S)) lastInput = "down";
         else if (Input.GetKey(KeyCode.D)) lastInput = "right";
 
+        // 设置动画参数
+        SetAnimationParameters();
+
         // 当不在lerping时，尝试开始新的移动
         if (!isLerping)
         {
-            // 如果有按键输入，则使用 lastInput 的方向移动
-            if (lastInput != "")
+            if (lastInput != null && lastInput != "")
             {
                 Vector3 direction = GetDirection(lastInput);
                 if (CanMove(direction))
@@ -30,7 +38,7 @@ public class PacStudentController : MonoBehaviour
                     currentInput = lastInput;
                     StartLerp(direction);
                 }
-                else if (CanMove(GetDirection(currentInput)))
+                else if (currentInput != null && CanMove(GetDirection(currentInput)))
                 {
                     StartLerp(GetDirection(currentInput));
                 }
@@ -38,8 +46,33 @@ public class PacStudentController : MonoBehaviour
         }
         else
         {
-            // 在lerping时继续移动
             ContinueLerp();
+        }
+    }
+
+    void SetAnimationParameters()
+    {
+        // 重置所有方向参数
+        animator.SetBool("WalkUp", false);
+        animator.SetBool("WalkDown", false);
+        animator.SetBool("WalkLeft", false);
+        animator.SetBool("WalkRight", false);
+
+        // 根据输入方向设置对应的动画参数
+        switch (lastInput)
+        {
+            case "up":
+                animator.SetBool("WalkUp", true);
+                break;
+            case "down":
+                animator.SetBool("WalkDown", true);
+                break;
+            case "left":
+                animator.SetBool("WalkLeft", true);
+                break;
+            case "right":
+                animator.SetBool("WalkRight", true);
+                break;
         }
     }
 
@@ -86,6 +119,7 @@ public class PacStudentController : MonoBehaviour
             {
                 currentInput = "";  // 停止当前移动方向
                 lastInput = "";     // 停止任何新方向
+                SetAnimationParameters(); // 重置所有方向动画参数
             }
         }
     }
